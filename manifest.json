@@ -1,0 +1,26 @@
+{
+  "name": "DLsite Dianshu Farm Auto",
+  "description": "DLsite Dianshu Farm Auto",
+  "version": "1.0",
+  "manifest_version": 3,
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "icons": {
+    "16": "images/dianshu_icon.png",
+    "32": "images/dianshu_icon.png",
+    "48": "images/dianshu_icon.png",
+    "128": "images/dianshu_icon.png"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [ "https://dianshu.jp/*" ],
+      "js": [ "scripts/dianshu.js" ]
+    }
+  ],
+  "permissions": ["storage"]
+}
