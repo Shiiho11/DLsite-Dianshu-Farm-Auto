@@ -3,14 +3,18 @@ console.log("dianshu.js");
 function get_token() {
   const token = localStorage.getItem("dianshu_farm_login_token");
   if (token == null || token === "") {
-    window.alert("来自DLsite Point Farm Auto\n获取登录Token失败，请先登录点数农场！");
+    window.alert("来自DLsite Dianshu Farm Auto\n获取登录Token失败，请先登录点数农场！");
     if (window.location.href !== "https://dianshu.jp/farm") {
       window.location.href = "https://dianshu.jp/farm";
     }
     return null;
+  } else {
+    chrome.storage.local.set({ "dianshu_farm_login_token": token });
+    if (window.location.href === "https://dianshu.jp/farm") {
+      window.alert("来自DLsite Dianshu Farm Auto\n已登录，获取登录Token成功!");
+    }
+    return token;
   }
-  chrome.storage.local.set({ "dianshu_farm_login_token": token });
-  return token;
 }
 
 async function checkAndRunTask() {

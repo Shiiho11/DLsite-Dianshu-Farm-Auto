@@ -2,11 +2,11 @@ console.log("auto.js");
 
 export async function checkAndRunTask() {
   chrome.storage.local.get(['lastRunDate'], (result) => {
+    setBadge(false);
     const lastRunDate = result.lastRunDate;
     const today = getJapanDateYYYYMMDD();
     console.log("检查每日任务执行情况，lastRunDate:", lastRunDate, "today:", today);
     if (lastRunDate !== today) {
-      setBadge(false);
       chrome.storage.local.set({ lastTryDate: today });
       auto();
     } else {
@@ -17,6 +17,7 @@ export async function checkAndRunTask() {
 }
 
 export async function auto() {
+  setBadge(false);
   let result = await chrome.storage.local.get("dianshu_farm_login_token");
   const token = result.dianshu_farm_login_token;
 
@@ -64,31 +65,45 @@ export async function auto() {
   await chrome.storage.local.set({ lastRunDate: today });
 
   setBadge(true);
-  // 通知popup页面任务已完成
-  chrome.runtime.sendMessage({ action: "finished" });
+  // 通知popup页面任务已完成（如果popup不在，就忽略）
+  chrome.runtime.sendMessage({ action: "finished" }).catch((e) => {
+    console.debug("No receiver for message 'finished':", e?.message || e);
+  });
 }
 
 
 async function postRequest(url, data) {
-  let result = null;
-  await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "origin": "https://dianshu.jp",
-      "referer": "https://dianshu.jp/"
-    },
-    body: JSON.stringify(data)
-  })
-    .then(response => response.json())
-    .then(json => {
-      result = json;
-      console.log("请求结果：", result);
-    })
-    .catch(error => {
-      console.error("请求失败：", error);
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "origin": "https://dianshu.jp",
+        "referer": "https://dianshu.jp/",
+      },
+      body: JSON.stringify(data),
     });
-  return result;
+
+    if (!response.ok) {
+      console.warn(`请求失败，response：${response}`);
+      if (response.status === 401) {
+        console.warn("Token无效或过期！");
+        // 清除token并打开登录页
+        await chrome.storage.local.set({ "dianshu_farm_login_token": "" });
+        chrome.tabs.create({
+          url: "https://dianshu.jp/farm",
+          active: true,     // 是否切换到新标签
+        });
+      }
+      return null;
+    }
+    const result = await response.json();
+    console.log("请求结果：", result);
+    return result;
+  } catch (error) {
+    console.error("请求失败：", error);
+    return null;
+  }
 }
 
 function setBadge(flag) {

@@ -2,9 +2,25 @@ console.log("popup.js");
 
 const $ = (id) => document.getElementById(id);
 
-code_type_dict = {
-  "DL0001": "获得1点数"
-};
+function getCodeTypeText(code_type) {
+  if (code_type == null || code_type === "") {
+    return "没有得到点数";
+  } 
+  
+  try {
+    // 解析后4位数字
+    const match = code_type.match(/DL(\d{4})/);
+    if (match) {
+      const points = parseInt(match[1], 10);
+      return `获得${points}点数`;
+    } else {
+      return "未知结果";
+    }
+  } catch (e) {
+    console.error("解析code_type失败:", e);
+    return "未知结果";
+  }
+}
 
 function showError(message, linkUrl, linkText = "查看详情") {
   const el = $("error");
@@ -49,7 +65,7 @@ async function loadState() {
 
   $("lastTryDate").textContent = data.lastTryDate;
   $("lastRunDate").textContent = data.lastRunDate;
-  $("drawResult").textContent = code_type_dict[data.code_type] || "未知结果";
+  $("drawResult").textContent = getCodeTypeText(data.code_type);
 
   const token = data.dianshu_farm_login_token;
   if (token == null || token === "") {
