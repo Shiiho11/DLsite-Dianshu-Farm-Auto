@@ -22,5 +22,5 @@
       "js": [ "scripts/dianshu.js" ]
     }
   ],
-  "permissions": ["storage"]
+  "permissions": ["storage", "alarms" ]
 }

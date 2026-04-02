@@ -1,19 +1,47 @@
 console.log("auto.js");
 
 export async function checkAndRunTask() {
-  chrome.storage.local.get(['lastRunDate'], (result) => {
-    setBadge(false);
-    const lastRunDate = result.lastRunDate;
-    const today = getJapanDateYYYYMMDD();
-    console.log("检查每日任务执行情况，lastRunDate:", lastRunDate, "today:", today);
-    if (lastRunDate !== today) {
-      chrome.storage.local.set({ lastTryDate: today });
-      auto();
-    } else {
-      console.log("今日任务已执行过，无需重复执行");
-      setBadge(true);
+  let result = await chrome.storage.local.get(['lastRunDate']);
+  setBadge(false);
+  const lastRunDate = result.lastRunDate;
+  const today = getJapanDateYYYYMMDD();
+  console.log("检查每日任务执行情况，lastRunDate:", lastRunDate, "today:", today);
+  if (lastRunDate !== today) {
+    await performTask();
+  } else {
+    console.log("今日任务已执行过，无需重复执行");
+    setBadge(true);
+  }
+}
+
+export async function performTask() {
+  chrome.storage.local.set({ lastTryDate: getJapanDateYYYYMMDD() });
+  // 执行auto，增加重试机制，重试指定次数
+  const maxRetries = 5;
+  let attempt = 0;
+  let delay = 1000;
+  // 每次尝试后等待一段时间，第一次1秒，然后每次翻倍
+  while (attempt < maxRetries) {
+    attempt++;
+    console.log(`执行任务，尝试第${attempt}次...`);
+    try {
+      await auto();
+      let result = await chrome.storage.local.get(['lastRunDate']);
+      const lastRunDate = result.lastRunDate;
+      const today = getJapanDateYYYYMMDD();
+      if (lastRunDate === today) {
+        console.log("今日任务执行成功");
+        return; // 任务执行成功，退出函数
+      }
+      console.warn(`任务执行后日期未更新，可能执行失败`);
+    } catch (e) {
+      console.warn(`auto执行失败，错误: ${e?.message || String(e)}`);
     }
-  });
+    console.log(`等待${delay / 1000}秒后重试...`);
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    delay *= 2; // 每次重试等待时间翻倍
+  }
+  console.warn(`任务执行失败，已达到最大重试次数${maxRetries}`);
 }
 
 export async function auto() {
@@ -101,7 +129,7 @@ async function postRequest(url, data) {
     console.log("请求结果：", result);
     return result;
   } catch (error) {
-    console.error("请求失败：", error);
+    console.warn("请求失败：", error);
     return null;
   }
 }

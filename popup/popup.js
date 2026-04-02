@@ -83,7 +83,7 @@ async function init() {
   $("runBtn").onclick = async () => {
     $("runBtn").disabled = true;
     try {
-      await auto();
+      await run();
     } catch (e) {
       showError(`执行失败：${e?.message || String(e)}`);
       $("runBtn").disabled = false;
@@ -101,8 +101,8 @@ async function init() {
   });
 }
 
-async function auto() {
-  const response = await chrome.runtime.sendMessage({ action: "auto" });
+async function run() {
+  const response = await chrome.runtime.sendMessage({ action: "performTask" });
   console.log("收到background.js的响应:", response);
 }
 
